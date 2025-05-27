@@ -16,8 +16,23 @@ pub enum Expr<Ty> {
         name: String,
         value: Box<Expr<Ty>>,
         then: Box<Expr<Ty>>,
-        type_: Ty,
+        ty: Ty,
     },
+}
+
+impl<Ty> Expr<Ty> {
+    pub fn ty(&self) -> &Ty {
+        match self {
+            Expr::Lit(_, ty) => ty,
+            Expr::Var(_, ty) => ty,
+            Expr::Neg(_, ty) => ty,
+            Expr::Add(_, _, ty) => ty,
+            Expr::Sub(_, _, ty) => ty,
+            Expr::Mul(_, _, ty) => ty,
+            Expr::Div(_, _, ty) => ty,
+            Expr::Let { ty, .. } => ty,
+        }
+    }
 }
 
 #[allow(clippy::let_and_return)]
@@ -30,9 +45,10 @@ where
     };
 
     let expr = {
-        // atom -> int | var
+        // atom -> int | string | var
         let atom = (select! {
             Token::Int(lit) => Expr::Lit(lit, ()),
+            Token::String(lit) => Expr::Lit(lit, ()),
         })
         .or(name.map(|name| Expr::Var(name, ())));
 
@@ -77,7 +93,7 @@ where
                 name,
                 value: Box::new(value),
                 then: Box::new(then),
-                type_: (),
+                ty: (),
             });
 
         // let -> let | expr

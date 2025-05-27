@@ -1,5 +1,8 @@
 mod lexer;
 mod parser;
+mod analyzer;
+
+use std::collections::HashMap;
 
 use chumsky::input::Stream;
 use logos::Logos;
@@ -7,11 +10,9 @@ use lexer::Token;
 use parser::parser;
 use chumsky::prelude::*;
 
-const SOURCE: &str = r"
-    let x = 1 + 2 * 3 in
-    let y = x + 2 in
-    x + y
-";
+const SOURCE: &str = r#"
+    "Hello, world!" + 2
+"#;
 
 fn main() {
     let token_iter = Token::lexer(SOURCE)
@@ -26,5 +27,9 @@ fn main() {
 
     let ast = parser().parse(token_stream).unwrap();
 
-    println!("{:#?}", ast);
+    println!("Untyped AST:\n{:#?}", ast);
+
+    let typed_ast = ast.analyze(&mut HashMap::new()).unwrap();
+
+    println!("Typed AST:\n{:#?}", typed_ast);
 }
