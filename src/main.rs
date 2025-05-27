@@ -3,7 +3,6 @@ mod parser;
 mod analyzer;
 
 use std::collections::HashMap;
-
 use chumsky::input::Stream;
 use logos::Logos;
 use lexer::Token;
