@@ -12,8 +12,12 @@ pub enum Expr<Ty> {
     Mul(Box<Expr<Ty>>, Box<Expr<Ty>>, Ty),
     Div(Box<Expr<Ty>>, Box<Expr<Ty>>, Ty),
 
-    Let(String, Box<Expr<Ty>>, Ty),
-    Block(Vec<Expr<Ty>>, Ty),
+    Let {
+        name: String,
+        value: Box<Expr<Ty>>,
+        then: Box<Expr<Ty>>,
+        type_: Ty,
+    },
 }
 
 #[allow(clippy::let_and_return)]
@@ -26,15 +30,18 @@ where
     };
 
     let expr = {
+        // atom -> int | var
         let atom = (select! {
             Token::Int(lit) => Expr::Lit(lit, ()),
         })
         .or(name.map(|name| Expr::Var(name, ())));
 
+        // unary -> atom | '-' unary
         let unary = just(Token::Sub)
             .repeated()
             .foldr(atom, |_op, rhs| Expr::Neg(Box::new(rhs), ()));
 
+        // product -> unary ( '*' unary | '/' unary )*
         let product = unary.clone().foldl(
             choice((
                 just(Token::Mul).to(Expr::Mul as fn(_, _, _) -> Expr<()>),
@@ -44,7 +51,7 @@ where
             .repeated(),
             |lhs, (op, rhs)| op(Box::new(lhs), Box::new(rhs), ()),
         );
-
+        // sum -> product ( '+' product | '-' product )*
         let sum = product.clone().foldl(
             choice((
                 just(Token::Add).to(Expr::Add as fn(_, _, _) -> Expr<()>),
@@ -58,21 +65,24 @@ where
         sum
     };
 
-    let decl = {
+    let decl = recursive(|decl| {
+        // let -> 'let' ident '=' expr 'in' decl
         let let_ = just(Token::Let)
 			.ignore_then(name)
 			.then_ignore(just(Token::Assign))
 			.then(expr.clone())
-			.map(|(name, value)| Expr::Let(name, Box::new(value), ()));
+            .then_ignore(just(Token::In))
+            .then(decl)
+			.map(|((name, value), then)| Expr::Let {
+                name,
+                value: Box::new(value),
+                then: Box::new(then),
+                type_: (),
+            });
 
+        // let -> let | expr
         let_.or(expr)
-    };
+    });
 
-    let program = decl
-        .repeated()
-        .collect()
-        .map(|decls| Expr::Block(decls, ()))
-        .then_ignore(end());
-
-    program
+    decl
 }

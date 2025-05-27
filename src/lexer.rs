@@ -26,4 +26,6 @@ pub enum Token {
 
     #[token("let")]
     Let,
+    #[token("in")]
+    In,
 }

@@ -8,8 +8,9 @@ use parser::parser;
 use chumsky::prelude::*;
 
 const SOURCE: &str = r"
-    let x = 1 + 2 * 3
-    let y = x + 2
+    let x = 1 + 2 * 3 in
+    let y = x + 2 in
+    x + y
 ";
 
 fn main() {
