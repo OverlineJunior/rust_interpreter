@@ -1,19 +1,40 @@
+use crate::{lexer::Literal, parser::Expr};
 use std::collections::HashMap;
 
-use crate::{lexer::Literal, parser::Expr};
+pub type Env = HashMap<String, Type>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Int,
-	String,
+    String,
+}
+
+fn analyze_binary_op(
+    env: &mut Env,
+    lhs: &Expr<()>,
+    rhs: &Expr<()>,
+    op: &str,
+) -> Result<Expr<Type>, String> {
+    let lhs = lhs.analyze(env)?;
+    let rhs = rhs.analyze(env)?;
+
+    if *lhs.ty() == Type::Int && *rhs.ty() == Type::Int {
+        Ok(Expr::Div(Box::new(lhs), Box::new(rhs), Type::Int))
+    } else {
+        Err(format!(
+            "Cannot apply binary operator `{op}` to types `{:?}` and `{:?}`",
+            lhs.ty(),
+            rhs.ty()
+        ))
+    }
 }
 
 impl Expr<()> {
-    pub fn analyze(&self, env: &mut HashMap<String, Type>) -> Result<Expr<Type>, String> {
+    pub fn analyze(&self, env: &mut Env) -> Result<Expr<Type>, String> {
         match self {
             Expr::Lit(lit, _) => match lit {
                 Literal::Int(_) => Ok(Expr::Lit(lit.clone(), Type::Int)),
-				Literal::String(_) => Ok(Expr::Lit(lit.clone(), Type::String)),
+                Literal::String(_) => Ok(Expr::Lit(lit.clone(), Type::String)),
             },
 
             Expr::Var(name, _) => {
@@ -37,65 +58,13 @@ impl Expr<()> {
                 }
             }
 
-            Expr::Add(lhs, rhs, _) => {
-                let lhs = lhs.analyze(env)?;
-                let rhs = rhs.analyze(env)?;
+            Expr::Add(lhs, rhs, _) => analyze_binary_op(env, lhs, rhs, "+"),
 
-                if *lhs.ty() == Type::Int && *rhs.ty() == Type::Int {
-                    Ok(Expr::Add(Box::new(lhs), Box::new(rhs), Type::Int))
-                } else {
-                    Err(format!(
-                        "Cannot apply binary operator `+` to types `{:?}` and `{:?}`",
-                        lhs.ty(),
-                        rhs.ty()
-                    ))
-                }
-            }
+            Expr::Sub(lhs, rhs, _) => analyze_binary_op(env, lhs, rhs, "-"),
 
-            Expr::Sub(lhs, rhs, _) => {
-                let lhs = lhs.analyze(env)?;
-                let rhs = rhs.analyze(env)?;
+            Expr::Mul(lhs, rhs, _) => analyze_binary_op(env, lhs, rhs, "*"),
 
-                if *lhs.ty() == Type::Int && *rhs.ty() == Type::Int {
-                    Ok(Expr::Sub(Box::new(lhs), Box::new(rhs), Type::Int))
-                } else {
-                    Err(format!(
-                        "Cannot apply binary operator `-` to types `{:?}` and `{:?}`",
-                        lhs.ty(),
-                        rhs.ty()
-                    ))
-                }
-            }
-
-            Expr::Mul(lhs, rhs, _) => {
-                let lhs = lhs.analyze(env)?;
-                let rhs = rhs.analyze(env)?;
-
-                if *lhs.ty() == Type::Int && *rhs.ty() == Type::Int {
-                    Ok(Expr::Mul(Box::new(lhs), Box::new(rhs), Type::Int))
-                } else {
-                    Err(format!(
-                        "Cannot apply binary operator `*` to types `{:?}` and `{:?}`",
-                        lhs.ty(),
-                        rhs.ty()
-                    ))
-                }
-            }
-
-            Expr::Div(lhs, rhs, _) => {
-                let lhs = lhs.analyze(env)?;
-                let rhs = rhs.analyze(env)?;
-
-                if *lhs.ty() == Type::Int && *rhs.ty() == Type::Int {
-                    Ok(Expr::Div(Box::new(lhs), Box::new(rhs), Type::Int))
-                } else {
-                    Err(format!(
-                        "Cannot apply binary operator `/` to types `{:?}` and `{:?}`",
-                        lhs.ty(),
-                        rhs.ty()
-                    ))
-                }
-            }
+            Expr::Div(lhs, rhs, _) => analyze_binary_op(env, lhs, rhs, "/"),
 
             Expr::Let {
                 name,
@@ -103,21 +72,21 @@ impl Expr<()> {
                 then,
                 ty: _,
             } => {
-				let value = value.analyze(env)?;
-				env.insert(name.clone(), value.ty().clone());
+                let value = value.analyze(env)?;
+                env.insert(name.clone(), value.ty().clone());
 
-				let then = then.analyze(env)?;
-				let ty = then.ty().clone();
+                let then = then.analyze(env)?;
+                let ty = then.ty().clone();
 
-				// Variable goes out of scope after it's used by `then`.
-				env.remove(name);
+                // Variable goes out of scope after it's used by `then`.
+                env.remove(name);
 
-				Ok(Expr::Let {
-					name: name.clone(),
-					value: Box::new(value),
-					then: Box::new(then),
-					ty,
-				})
+                Ok(Expr::Let {
+                    name: name.clone(),
+                    value: Box::new(value),
+                    then: Box::new(then),
+                    ty,
+                })
             }
         }
     }
