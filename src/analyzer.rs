@@ -9,26 +9,6 @@ pub enum Type {
     String,
 }
 
-fn analyze_binary_op(
-    env: &mut Env,
-    lhs: &Expr<()>,
-    rhs: &Expr<()>,
-    op: &str,
-) -> Result<Expr<Type>, String> {
-    let lhs = lhs.analyze(env)?;
-    let rhs = rhs.analyze(env)?;
-
-    if *lhs.ty() == Type::Int && *rhs.ty() == Type::Int {
-        Ok(Expr::Div(Box::new(lhs), Box::new(rhs), Type::Int))
-    } else {
-        Err(format!(
-            "Cannot apply binary operator `{op}` to types `{:?}` and `{:?}`",
-            lhs.ty(),
-            rhs.ty()
-        ))
-    }
-}
-
 impl Expr<()> {
     pub fn analyze(&self, env: &mut Env) -> Result<Expr<Type>, String> {
         match self {
