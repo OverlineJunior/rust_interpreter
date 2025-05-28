@@ -58,13 +58,65 @@ impl Expr<()> {
                 }
             }
 
-            Expr::Add(lhs, rhs, _) => analyze_binary_op(env, lhs, rhs, "+"),
+            Expr::Add(lhs, rhs, _) => {
+                let lhs = lhs.analyze(env)?;
+                let rhs = rhs.analyze(env)?;
 
-            Expr::Sub(lhs, rhs, _) => analyze_binary_op(env, lhs, rhs, "-"),
+                if *lhs.ty() == Type::Int && *rhs.ty() == Type::Int {
+                    Ok(Expr::Add(Box::new(lhs), Box::new(rhs), Type::Int))
+                } else {
+                    Err(format!(
+                        "Cannot apply binary operator `+` to types `{:?}` and `{:?}`",
+                        lhs.ty(),
+                        rhs.ty()
+                    ))
+                }
+            }
 
-            Expr::Mul(lhs, rhs, _) => analyze_binary_op(env, lhs, rhs, "*"),
+            Expr::Sub(lhs, rhs, _) => {
+                let lhs = lhs.analyze(env)?;
+                let rhs = rhs.analyze(env)?;
 
-            Expr::Div(lhs, rhs, _) => analyze_binary_op(env, lhs, rhs, "/"),
+                if *lhs.ty() == Type::Int && *rhs.ty() == Type::Int {
+                    Ok(Expr::Sub(Box::new(lhs), Box::new(rhs), Type::Int))
+                } else {
+                    Err(format!(
+                        "Cannot apply binary operator `-` to types `{:?}` and `{:?}`",
+                        lhs.ty(),
+                        rhs.ty()
+                    ))
+                }
+            }
+
+            Expr::Mul(lhs, rhs, _) => {
+                let lhs = lhs.analyze(env)?;
+                let rhs = rhs.analyze(env)?;
+
+                if *lhs.ty() == Type::Int && *rhs.ty() == Type::Int {
+                    Ok(Expr::Mul(Box::new(lhs), Box::new(rhs), Type::Int))
+                } else {
+                    Err(format!(
+                        "Cannot apply binary operator `*` to types `{:?}` and `{:?}`",
+                        lhs.ty(),
+                        rhs.ty()
+                    ))
+                }
+            }
+
+            Expr::Div(lhs, rhs, _) => {
+                let lhs = lhs.analyze(env)?;
+                let rhs = rhs.analyze(env)?;
+
+                if *lhs.ty() == Type::Int && *rhs.ty() == Type::Int {
+                    Ok(Expr::Div(Box::new(lhs), Box::new(rhs), Type::Int))
+                } else {
+                    Err(format!(
+                        "Cannot apply binary operator `/` to types `{:?}` and `{:?}`",
+                        lhs.ty(),
+                        rhs.ty()
+                    ))
+                }
+            }
 
             Expr::Let {
                 name,
