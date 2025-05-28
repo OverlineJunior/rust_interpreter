@@ -1,6 +1,7 @@
 mod lexer;
 mod parser;
 mod analyzer;
+mod interpreter;
 
 use std::collections::HashMap;
 use chumsky::input::Stream;
@@ -10,7 +11,9 @@ use parser::parser;
 use chumsky::prelude::*;
 
 const SOURCE: &str = r#"
-    "Hello, world!" + 2
+    let x = 5 in
+    let y = 10 in
+    x + y
 "#;
 
 fn main() {
@@ -26,9 +29,12 @@ fn main() {
 
     let ast = parser().parse(token_stream).unwrap();
 
-    println!("Untyped AST:\n{:#?}", ast);
+    println!("Untyped AST:\n{:#?}\n", ast);
 
     let typed_ast = ast.analyze(&mut HashMap::new()).unwrap();
 
-    println!("Typed AST:\n{:#?}", typed_ast);
+    println!("Typed AST:\n{:#?}\n", typed_ast);
+
+    let result = typed_ast.eval(&mut HashMap::new()).unwrap();
+    println!("Result: {:?}", result);
 }
