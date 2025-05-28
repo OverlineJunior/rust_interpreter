@@ -27,14 +27,14 @@ fn main() {
     let token_stream = Stream::from_iter(token_iter)
         .map((0..SOURCE.len()).into(), |(t, s): (_, _)| (t, s));
 
-    let ast = parser().parse(token_stream).unwrap();
+    let ast = parser().parse(token_stream).into_result().expect("Parser error");
 
     println!("Untyped AST:\n{:#?}\n", ast);
 
-    let typed_ast = ast.analyze(&mut HashMap::new()).unwrap();
+    let typed_ast = ast.analyze(&mut HashMap::new()).expect("Analyzer error");
 
     println!("Typed AST:\n{:#?}\n", typed_ast);
 
-    let result = typed_ast.eval(&mut HashMap::new()).unwrap();
+    let result = typed_ast.eval(&mut HashMap::new()).expect("Interpreter error");
     println!("Result: {:?}", result);
 }
